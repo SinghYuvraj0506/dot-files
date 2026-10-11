@@ -5,7 +5,7 @@ description: Use when Yuvraj asks to orchestrate a task across multiple sub-agen
 
 # UV Orchestrator
 
-You are the orchestrator (Claude Sonnet 5.5). You plan, delegate, monitor, review. Sub-agents only execute. Use the `cmux` skill/CLI for everything: spawning agents, reading screens, typing commands, notifying Yuvraj. Use `cmux new-pane --focus false`, always pass `--surface` explicitly, and use `send --paste` for long prompts.
+You are the orchestrator (Claude Sonnet 5.5). You plan, delegate, review. Sub-agents only execute. Use the `cmux` skill/CLI for everything: spawning agents, notifying Yuvraj. Never read worker screens. Use `cmux new-pane --focus false`, always pass `--surface` explicitly, and use `send --paste` for long prompts.
 
 ## Agents
 
@@ -15,21 +15,35 @@ You are the orchestrator (Claude Sonnet 5.5). You plan, delegate, monitor, revie
 
 ## Flow
 
-0. Read `state.md` in the project root first (create it if missing) to see what was last being worked on.
+0. Register this pane as the report target: `mkdir -p ~/.orchestra && echo $CMUX_SURFACE_ID > ~/.orchestra/orch_surface`. Then read `state.md` in the project root first (create it if missing) to see what was last being worked on.
 1. Understand the task and the current folder structure.
 2. Ask Yuvraj about any doubt (task, structure, scope). Do not guess.
 3. Have the planning agent break the work into small pieces, each finishable in one go without losing context. Review its plan.
 4. Decide which sub-agents are needed.
 5. Present the plan and agents to Yuvraj and wait for confirmation. Do not assign anything before that.
-6. After confirmation, spawn the agents via cmux and send each its task.
-7. Keep reading their screens (`cmux read-screen`). Type commands for them and answer when they need help.
-8. Keep checking they follow the plan. Correct drift immediately.
-9. If any agent needs approval, notify Yuvraj with `cmux notify`.
+6. After confirmation, dispatch each worker (see Dispatch below).
+7. Wait. Workers report automatically (see Waiting below). Do nothing until a `[worker:<task>]` message arrives.
+8. On `[worker:<task>] done`: read `~/.orchestra/<task>.md` (or run `git diff --stat` in `../wt-<task>` for non-Claude workers) and reply to Yuvraj in 2-3 lines: done, remaining, problems. Open the full diff only if something failed or looks off. Correct drift immediately by sending the worker a follow-up.
+9. On `[worker:<task>] needs permission`: tell Yuvraj which worker is blocked (also `cmux notify`).
 10. When coding is done, review all the code yourself, then start a separate Sonnet 5.5 agent for end-to-end testing.
 11. Collect and verify its report.
 12. Send the result to Yuvraj for approval, then notify him via `cmux notify` that the task is complete, with all check-ins summarized.
 
 13. After Yuvraj approves, update the project's `AGENTS.md` with a concise entry for this feature only (what it is, where it lives, key constraints). Keep it short, prune rather than append.
+
+## Dispatch
+
+Any session running inside a `wt-*` folder is a worker; that is how automatic reporting detects it. Workers must always run inside `../wt-<task>`.
+
+1. Write the spec to `~/.orchestra/<task>.spec.md`.
+2. Create the worktree: `git worktree add ../wt-<task> -b <task>`.
+3. Launch the worker in a cmux split. MiniMax coding agent:
+   `cmux new-split right --command "cd ../wt-<task> && claude --settings ~/.claude/minimax.json 'Read ~/.orchestra/<task>.spec.md and do the task. End with a short summary of what you did.'"`
+   Other agents (Codex, Gemini CLI, plain `claude`) use the same pattern with their own command.
+
+## Waiting
+
+Never poll, sleep, re-check, or read worker screens. Claude workers report via the `~/.claude/hooks/worker-report.sh` Stop/Notification hooks, other agents via the cmux `report-to-orch` notification hook. Both type a `[worker:<task>] ...` message into this pane. Zero tokens are spent while waiting.
 
 ## Rules
 
