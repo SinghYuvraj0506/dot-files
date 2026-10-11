@@ -14,6 +14,10 @@ One Markdown file per module in the project's `docs/AI/`, indexed from the proje
 - Delegate heavy work (reading many files, large diffs, per-module research) to sub-agents. Sub-agents run on a low-cost model via cmux with `claudem` (MiniMax in Claude Code), so they exist to save your tokens, not to decide anything.
 - Sub-agent output is raw input. Check it for gaps or errors, spot-check key claims against the code, and re-run or correct it where it falls short.
 
+## cmux precondition
+
+Sub-agents are spawned only through cmux. Before spawning any, check that cmux is running (e.g. `[ -n "$CMUX_SURFACE_ID" ]` or `cmux ping`). If cmux is not open, do NOT spawn sub-agents anywhere else (no in-process Agent tool, no other terminal). Ask Yuvraj to either open cmux or explicitly confirm that you may do the delegated work yourself inside this session, and wait for his answer. Do not proceed with any delegated step until he confirms.
+
 ## Create (no map exists)
 
 1. Ask Yuvraj which modules to document. Suggest modules from the folder structure.
