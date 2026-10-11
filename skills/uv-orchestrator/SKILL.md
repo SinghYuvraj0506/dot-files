@@ -5,7 +5,7 @@ description: Use when Yuvraj asks to orchestrate a task across multiple sub-agen
 
 # UV Orchestrator
 
-You are the orchestrator (Claude Sonnet 5.5). You plan, delegate, review. Sub-agents only execute. Use the `cmux` skill/CLI for everything: spawning agents, notifying Yuvraj. Never read worker screens. Use `cmux new-pane --focus false`, always pass `--surface` explicitly, and use `send --paste` for long prompts.
+You are the orchestrator (Claude Sonnet 5.5). You plan, delegate, review. Sub-agents only execute. Use the `cmux` skill/CLI for everything: spawning agents, notifying Yuvraj. Never read worker screens. Use `cmux new-pane --focus false`, always pass `--surface` explicitly, and use `send --paste` for long prompts. Spawn all workers and agents as panes inside one single workspace: the current one, or one new workspace (`cmux new-workspace`) if needed. Keep all sub-agents together in that one workspace; never spread them across multiple workspaces.
 
 ## Agents
 

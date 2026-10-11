@@ -18,6 +18,8 @@ One Markdown file per module in the project's `docs/AI/`, indexed from the proje
 
 Sub-agents are spawned only through cmux. Before spawning any, check that cmux is running (e.g. `[ -n "$CMUX_SURFACE_ID" ]` or `cmux ping`). If cmux is not open, do NOT spawn sub-agents anywhere else (no in-process Agent tool, no other terminal). Ask Yuvraj to either open cmux or explicitly confirm that you may do the delegated work yourself inside this session, and wait for his answer. Do not proceed with any delegated step until he confirms.
 
+Spawn every sub-agent as a pane (`cmux new-split` / `cmux new-pane`) inside one single workspace. Use the current workspace, or create one new workspace (`cmux new-workspace`) if needed, but keep all sub-agents together in that one workspace. Never spread them across multiple workspaces.
+
 ## Create (no map exists)
 
 1. Ask Yuvraj which modules to document. Suggest modules from the folder structure.
