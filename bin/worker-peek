@@ -1,0 +1,57 @@
+#!/bin/zsh
+# Usage: worker-peek <task>   (task = worktree folder name, e.g. wt-foo)
+# Run from the main repo (or any worktree of it).
+task=$1
+[[ -n $task ]] || { echo "usage: worker-peek <task>" >&2; exit 1; }
+dir=~/.orchestra
+snap=$dir/$task.lastpeek
+mkdir -p $dir
+
+wt=$(git worktree list --porcelain 2>/dev/null | awk -v t="/$task" '/^worktree /{p=substr($0,10); if (substr(p,length(p)-length(t)+1)==t) print p}')
+[[ -n $wt ]] || { echo "no worktree named $task found" >&2; exit 1; }
+
+stat=$(git -C "$wt" diff --stat HEAD 2>/dev/null)
+gst=$(git -C "$wt" status --porcelain 2>/dev/null)
+files=$(print -r -- "$gst" | grep -c .)
+stat=$(printf '%s\n%s' "$stat" "$gst")
+
+tdir=~/.claude/projects/${wt//[^A-Za-z0-9]/-}
+transcript=$(ls -t $tdir/*.jsonl 2>/dev/null | head -1)
+turns=0; hash=none; last=""
+if [[ -n $transcript ]]; then
+  turns=$(jq -c 'select(.type=="assistant")' "$transcript" | wc -l | tr -d ' ')
+  last=$(jq -rs '[.[]|select(.type=="assistant")|.message.content[]?|select(.type=="text")|.text]|.[-2:]|join("\n---\n")' "$transcript")
+  lastone=$(jq -rs '[.[]|select(.type=="assistant")|.message.content[]?|select(.type=="text")|.text]|last // ""' "$transcript")
+  hash=$(print -rn -- "$lastone" | shasum | cut -c1-12)
+fi
+
+# --- compare with previous snapshot ---
+if [[ -f $snap ]]; then
+  pfiles=$(sed -n 's/^files=//p' $snap); pturns=$(sed -n 's/^turns=//p' $snap)
+  phash=$(sed -n 's/^hash=//p' $snap); pstat=$(sed -n '/^---stat$/,$p' $snap | sed 1d)
+  dfiles=$((files - pfiles)); dturns=$((turns - pturns))
+  if [[ $stat != $pstat ]]; then
+    progress="PROGRESS: +$dfiles files changed, +$dturns turns since last check"
+  elif (( dturns > 0 )); then
+    progress="NO PROGRESS since last check - POSSIBLE LOOP: +$dturns turns, no files changed$([[ $hash == $phash ]] && echo ', same last message')"
+  else
+    progress="NO PROGRESS since last check"
+  fi
+else
+  progress="PROGRESS: first check ($files files changed, $turns turns)"
+fi
+
+{ echo "files=$files"; echo "turns=$turns"; echo "hash=$hash"; echo "---stat"; echo "$stat"; } > $snap
+
+started=$dir/$task.timer
+if [[ -f $started ]]; then
+  s=$(( $(date +%s) - $(stat -f %m $started) )); elapsed="$((s/60))m$((s%60))s"
+else
+  elapsed="unknown (no timer)"
+fi
+
+echo "$progress"
+echo "elapsed: $elapsed | turns: $turns | files changed: $files"
+echo "--- diff --stat (tracked) and untracked/modified files"; echo "$stat" | grep . || echo "(no changes)"
+echo "--- last 2 messages"; echo "${last:-(none)}"
+

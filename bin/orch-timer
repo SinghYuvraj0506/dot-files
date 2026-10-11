@@ -1,0 +1,37 @@
+#!/bin/zsh
+# Usage: orch-timer <task> | orch-timer --cancel <task>
+# Nudges the orchestrator pane every ORCH_TIMER_INTERVAL seconds (default 300)
+# until the worker reports (<task>.md newer than <task>.timer) or it is cancelled.
+zmodload zsh/system
+dir=~/.orchestra
+interval=${ORCH_TIMER_INTERVAL:-300}
+
+kill_timer() {
+  local pidfile=$dir/$1.timerpid
+  if [[ -f $pidfile ]]; then pkill -P "$(<$pidfile)" 2>/dev/null; kill "$(<$pidfile)" 2>/dev/null; fi
+  rm -f $pidfile
+}
+
+if [[ $1 == --cancel ]]; then
+  [[ -n $2 ]] || { echo "usage: orch-timer [--cancel] <task>" >&2; exit 1; }
+  kill_timer "$2"
+  exit 0
+fi
+
+task=$1
+[[ -n $task ]] || { echo "usage: orch-timer [--cancel] <task>" >&2; exit 1; }
+mkdir -p $dir
+kill_timer $task
+touch $dir/$task.timer
+
+(
+  while sleep $interval; do
+    [[ $dir/$task.md -nt $dir/$task.timer ]] && break
+    orch=$(<$dir/orch_surface) 2>/dev/null || break
+    cmux send --surface "$orch" "[worker:$task] 5-min check-in. Run worker-peek $task and compare with the last check." >/dev/null 2>&1
+    cmux send-key --surface "$orch" enter >/dev/null 2>&1
+  done
+  [[ -f $dir/$task.timerpid && "$(<$dir/$task.timerpid)" == "$sysparams[pid]" ]] && rm -f $dir/$task.timerpid
+) </dev/null >/dev/null 2>&1 &
+echo $! > $dir/$task.timerpid
+disown
