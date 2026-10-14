@@ -7,7 +7,7 @@ Yuvraj's agent setup: shared instructions, skills, and the multi-agent orchestra
 | Path | Purpose | Linked from |
 |---|---|---|
 | `AGENTS.md` | Global agent instructions (also the commit co-author rule) | `~/.claude/CLAUDE.md` (symlink) |
-| `skills/` | All custom skills: `cmux`, `codebase-map`, `github-handler`, `initialize-agents-md`, `uv-orchestrator` | `~/.claude/skills` (symlink) |
+| `skills/` | All custom skills: `cmux`, `codebase-map`, `github-handler`, `initialize-agents-md`, `summarize-branch`, `uv-orchestrator` | `~/.claude/skills` (symlink) |
 | `bin/orch-timer` | 5-minute check-in timer for a worker | `~/.local/bin/orch-timer` (symlink) |
 | `bin/worker-peek` | Progress snapshot and comparison for a worker | `~/.local/bin/worker-peek` (symlink) |
 
