@@ -17,14 +17,26 @@ Summarize one branch against the production branch, flag errors, and report conf
 1. Get the branch name from Yuvraj. If missing, ask. Confirm the production branch with Yuvraj (see `github-handler`), do not assume `main`.
 2. `git fetch`, then check the branch exists locally or on the remote. Work read-only: never check out, commit to, or push either branch.
 3. Compare against production using the merge base: `git diff --stat <prod>...<branch>`, `git log --oneline <prod>..<branch>`, and the full diff for the changed files. Read small diffs yourself. For large diffs, hand the reading to the reviewer (step 5).
-4. Write a brief summary: what the branch does, grouped by area, with the notable files. Short, no per-line narration.
+4. Build the summary as diagrams, not prose (see Diagram output). Keep any text to one-line captions.
 5. Verify correctness, only if Yuvraj asked for it (or asks later):
    - Analyze the changed code yourself for bugs, broken edge cases, missing error handling and inconsistencies with the surrounding code.
    - Also spawn a reviewer through cmux (see below) to check the changed code against the existing code it touches, and to report any errors it finds.
 6. Check conflicts:
    - With production: `git merge-tree --write-tree <prod> <branch>` (exit code 1 means conflicts; list the files).
    - With other branches: if Yuvraj named any, or other open branches touch the same files (`git branch -r --no-merged <prod>` plus `git diff --name-only <prod>...<other>`), run the same merge-tree check and report real conflicts.
-7. Report to Yuvraj: summary, errors found (file, line, why), conflicts (with which branch, which files). Say plainly if nothing was found.
+7. Report to Yuvraj: publish the diagram page (see Diagram output) and reply with the link plus 2-3 lines: what the branch does, error count, conflict status. Say plainly if nothing was found.
+
+## Diagram output
+
+The terminal cannot render flowcharts, so publish one HTML page with the Artifact tool. Load the `artifact-design` and `artifact-diagramming` skills first. Title it with the branch name. Keep it private (the default) and do not share it further.
+
+Show, in this order:
+1. **Overview flowchart:** left to right, the branch's flow: entry point, then the modules/files it passes through, then outputs or side effects. Group files by area in subgraphs. Colour nodes by change type: added, modified, deleted, renamed. Add the `+lines/-lines` count to each node.
+2. **Connection map:** arrows for how the changed files depend on each other (imports, calls, config references), and dashed arrows to unchanged files they touch. This is what shows the blast radius.
+3. **Findings overlay:** mark nodes with verified errors (red, numbered) and nodes that conflict with production or another branch (amber). Below the diagram, a compact table: number, file:line, one-line reason. Omit this part if nothing was found, and say so.
+4. **Legend** for colours and line styles.
+
+Build the edges from the real code (read imports and references in the changed files), never guess a connection. For very large branches, show only top-level areas in the overview and one detail diagram per area. Use Mermaid (pinned version from cdnjs) or inline SVG, whichever draws the real flow more clearly. It must read well in light and dark mode and at phone width.
 
 ## Reviewer via cmux
 
