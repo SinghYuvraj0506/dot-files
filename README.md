@@ -7,11 +7,20 @@ Yuvraj's agent setup: shared instructions, skills, and the multi-agent orchestra
 | Path | Purpose | Linked from |
 |---|---|---|
 | `AGENTS.md` | Global agent instructions (also the commit co-author rule) | `~/.claude/CLAUDE.md` (symlink) |
-| `skills/` | All custom skills: `cmux`, `codebase-map`, `github-handler`, `initialize-agents-md`, `summarize-branch`, `uv-orchestrator` | `~/.claude/skills` (symlink) |
+| `skills/` | All skills, kept flat (one folder per skill, no nesting). Custom: `cmux`, `codebase-map`, `github-handler`, `initialize-agents-md`, `summarize-branch`, `uv-orchestrator`. Third-party video skills from [heygen-com/hyperframes](https://github.com/heygen-com/hyperframes): see below | `~/.claude/skills` (symlink) |
+| `skills-lock.json` | Version lock for the installed hyperframes skills (source and hash per skill) | - |
 | `bin/orch-timer` | 5-minute check-in timer for a worker | `~/.local/bin/orch-timer` (symlink) |
 | `bin/worker-peek` | Progress snapshot and comparison for a worker | `~/.local/bin/worker-peek` (symlink) |
 
 Always edit the files here, never the symlink targets.
+
+## Hyperframes video skills
+
+Installed from `heygen-com/hyperframes` and recorded in `skills-lock.json`. They must stay flat in `skills/`: Claude Code only discovers `skills/<name>/SKILL.md` one level deep, and the skills reference each other by folder name.
+
+- Entry point: `hyperframes` (read first for any video request, routes to the others)
+- Workflows: `product-launch-video`, `faceless-explainer`, `general-video`, `motion-graphics`, `talking-head-recut`, `embedded-captions`, `slideshow`, `remotion-to-hyperframes`
+- Capabilities: `hyperframes-core`, `hyperframes-animation`, `hyperframes-keyframes`, `hyperframes-creative`, `hyperframes-audio`, `hyperframes-registry`, `hyperframes-studio`, `hyperframes-cli`, `media-use`
 
 ## UV Orchestrator: how it works
 
